@@ -7,10 +7,10 @@ const serviceEnv: ServiceEnv = {
     url: 'http://23.94.59.38:9999/api/v1'
   },
   test: {
-    url: 'http://localhost:8080'
+    url: 'http://23.94.59.38:9999/api/v1'
   },
   prod: {
-    url: 'http://localhost:8080'
+    url: 'http://23.94.59.38:9999/api/v1'
   }
 }
 

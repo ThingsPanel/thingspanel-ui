@@ -2,14 +2,14 @@
   <n-modal v-model:show="modalVisible" preset="card" :title="title" class="w-700px">
     <n-form ref="formRef" label-placement="left" :label-width="80" :model="formModel" :rules="rules">
       <n-grid :cols="24" :x-gap="18">
-        <n-form-item-grid-item :span="12" label="用户名" path="userName">
-          <n-input v-model:value="formModel.userName" />
+        <n-form-item-grid-item :span="12" label="用户名" path="name">
+          <n-input v-model:value="formModel.name" />
         </n-form-item-grid-item>
         <n-form-item-grid-item :span="12" label="邮箱" path="email">
           <n-input v-model:value="formModel.email" />
         </n-form-item-grid-item>
-        <n-form-item-grid-item :span="12" label="手机号" path="phone">
-          <n-input v-model:value="formModel.phone" />
+        <n-form-item-grid-item :span="12" label="手机号" path="phone_number">
+          <n-input v-model:value="formModel.phone_number" />
         </n-form-item-grid-item>
         <n-form-item-grid-item :span="12" label="性别">
           <n-radio-group v-model:value="formModel.gender">
@@ -17,8 +17,8 @@
           </n-radio-group>
         </n-form-item-grid-item>
         <template v-if="type === 'add'">
-          <n-form-item-grid-item :span="12" label="密码" path="pwd">
-            <n-input v-model:value="formModel.pwd" type="password" />
+          <n-form-item-grid-item :span="12" label="密码" path="password">
+            <n-input v-model:value="formModel.password" type="password" />
           </n-form-item-grid-item>
           <n-form-item-grid-item :span="12" label="确认密码" path="confirmPwd">
             <n-input v-model:value="formModel.confirmPwd" type="password" />
@@ -40,6 +40,7 @@
 import { ref, computed, reactive, watch, toRefs } from 'vue'
 import type { FormInst, FormItemRule } from 'naive-ui'
 import { genderOptions } from '@/constants'
+import { addUser, editUser } from '@/service'
 import { formRules, createRequiredFormRule, getConfirmPwdRule } from '@/utils'
 
 export interface Props {
@@ -66,6 +67,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 interface Emits {
   (e: 'update:visible', visible: boolean): void
+  /** 点击协议 */
+  (e: 'success'): void
 }
 
 const emit = defineEmits<Emits>()
@@ -92,30 +95,30 @@ const title = computed(() => {
 
 const formRef = ref<HTMLElement & FormInst>()
 
-type FormModel = Pick<UserManagement.User, 'email' | 'userName' | 'phone' | 'gender' | 'remark'> & {
-  pwd: string
+type FormModel = Pick<UserManagement.User, 'email' | 'name' | 'phone_number' | 'gender' | 'remark'> & {
+  password: string
   confirmPwd: string
 }
 
 const formModel = reactive<FormModel>(createDefaultFormModel())
 
 const rules: Record<keyof FormModel, FormItemRule | FormItemRule[]> = {
-  userName: createRequiredFormRule('请输入用户名'),
+  name: createRequiredFormRule('请输入用户名'),
   gender: createRequiredFormRule('请选择性别'),
-  phone: formRules.phone,
+  phone_number: formRules.phone,
   email: formRules.email,
-  pwd: formRules.pwd,
-  confirmPwd: getConfirmPwdRule(toRefs(formModel).pwd),
+  password: formRules.pwd,
+  confirmPwd: getConfirmPwdRule(toRefs(formModel).password),
   remark: createRequiredFormRule('请输入备注')
 }
 
 function createDefaultFormModel(): FormModel {
   return {
-    userName: '',
+    name: '',
     gender: null,
-    phone: '',
+    phone_number: '',
     email: '',
-    pwd: '',
+    password: '',
     confirmPwd: '',
     remark: ''
   }
@@ -143,7 +146,16 @@ function handleUpdateFormModelByModalType() {
 
 async function handleSubmit() {
   await formRef.value?.validate()
-  window.$message?.success('新增成功!')
+  let data: any
+  if (props.type === 'add') {
+    data = await addUser(formModel)
+  } else if (props.type === 'edit') {
+    data = await editUser(formModel)
+  }
+  if (!data.error) {
+    window.$message?.success(data.message)
+    emit('success')
+  }
   closeModal()
 }
 

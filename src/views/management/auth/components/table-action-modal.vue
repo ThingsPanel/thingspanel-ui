@@ -2,19 +2,19 @@
   <n-modal v-model:show="modalVisible" preset="card" :title="title" class="w-800px">
     <n-form ref="formRef" label-placement="left" :label-width="120" :model="formModel" :rules="rules">
       <n-grid :cols="24" :x-gap="18">
-        <n-form-item-grid-item :span="12" label="父级菜单" path="parentId">
+        <n-form-item-grid-item :span="12" label="父级菜单" path="parent_id">
           <n-tree-select
-            v-model:value="formModel.parentId"
+            v-model:value="formModel.parent_id"
             :options="parentOptions"
-            label-field="meta.title"
+            label-field="title"
             key-field="path"
           />
         </n-form-item-grid-item>
-        <n-form-item-grid-item :span="12" label="标题" path="meta.title">
-          <n-input v-model:value="formModel.meta.title" />
+        <n-form-item-grid-item :span="12" label="标题" path="title">
+          <n-input v-model:value="formModel.title" />
         </n-form-item-grid-item>
-        <n-form-item-grid-item :span="12" label="标题（国际化）" path="meta.i18nTitle">
-          <n-input v-model:value="formModel.meta.i18nTitle" />
+        <n-form-item-grid-item :span="12" label="标题（国际化）" path="i18nTitle">
+          <n-input v-model:value="formModel.i18nTitle" />
         </n-form-item-grid-item>
         <n-form-item-grid-item :span="12" label="名称" path="name">
           <n-input v-model:value="formModel.name" />
@@ -25,26 +25,28 @@
         <n-form-item-grid-item :span="12" label="组件类型" path="component">
           <n-select v-model:value="formModel.component" :options="routeComponentTypeOptions" />
         </n-form-item-grid-item>
-        <n-form-item-grid-item :span="12" label="图标" path="meta.icon">
-          <icon-select v-model:value="formModel.meta.icon" :icons="icons" />
+        <n-form-item-grid-item :span="12" label="图标" path="icon">
+          <icon-select v-model:value="formModel.icon" :icons="icons" />
         </n-form-item-grid-item>
-        <n-form-item-grid-item :span="12" label="排序" path="meta.order">
-          <n-input-number v-model:value="formModel.meta.order" />
+        <n-form-item-grid-item :span="12" label="排序" path="orders">
+          <n-input-number v-model:value="formModel.orders" />
         </n-form-item-grid-item>
-        <n-form-item-grid-item :span="12" label="类型" path="type">
-          <n-radio-group v-model:value="formModel.type">
+        <n-form-item-grid-item :span="12" label="类型" path="element_type">
+          <n-radio-group v-model:value="formModel.element_type">
             <n-radio v-for="item in routeTypeOptions" :key="item.value" :value="item.value">{{ item.label }}</n-radio>
           </n-radio-group>
         </n-form-item-grid-item>
-        <n-form-item-grid-item :span="12" label="访问标识" path="sys_flag">
-          <n-radio-group v-model:value="formModel.sys_flag">
-            <n-radio v-for="item in routeSysFlagOptions" :key="item.value" :value="item.value">
-              {{ item.label }}
-            </n-radio>
-          </n-radio-group>
+        <n-form-item-grid-item :span="12" label="权限" path="authority">
+          <n-checkbox-group v-model:value="formModel.authority">
+            <n-space item-style="display: flex;">
+              <n-checkbox v-for="item in routeSysFlagOptions" :key="item.value" :value="item.value" :label="item.label">
+                {{ item.label }}
+              </n-checkbox>
+            </n-space>
+          </n-checkbox-group>
         </n-form-item-grid-item>
         <n-form-item-grid-item :span="24" label="描述">
-          <n-input v-model:value="formModel.describe" type="textarea" />
+          <n-input v-model:value="formModel.description" type="textarea" />
         </n-form-item-grid-item>
       </n-grid>
       <n-space class="w-full pt-16px" :size="24" justify="end">
@@ -59,7 +61,8 @@
 import { ref, computed, reactive, watch } from 'vue'
 import type { FormInst } from 'naive-ui'
 import { routeComponentTypeOptions, routeTypeOptions, routeSysFlagOptions } from '@/constants'
-import { createRequiredFormRule } from '@/utils'
+import { addElement, editElement } from '@/service'
+import { createRequiredFormRule, deepClone } from '@/utils'
 import { icons } from '../../../plugin/icon/icons'
 
 export interface Props {
@@ -87,6 +90,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 interface Emits {
   (e: 'update:visible', visible: boolean): void
+  (e: 'success'): void
 }
 
 const emit = defineEmits<Emits>()
@@ -121,31 +125,40 @@ const formRef = ref<HTMLElement & FormInst>()
 
 type FormModel = Pick<
   CustomRoute.Route,
-  'parentId' | 'name' | 'path' | 'component' | 'meta' | 'type' | 'sys_flag' | 'describe'
+  | 'parent_id'
+  | 'name'
+  | 'path'
+  | 'component'
+  | 'element_type'
+  | 'authority'
+  | 'description'
+  | 'i18nTitle'
+  | 'icon'
+  | 'orders'
+  | 'title'
 >
 
 const formModel = reactive<FormModel>(createDefaultFormModel())
 
 const rules = {
-  'meta.title': createRequiredFormRule('请输入标题'),
-  name: createRequiredFormRule('请输入名称')
+  title: createRequiredFormRule('请输入标题'),
+  name: createRequiredFormRule('请输入名称'),
+  authority: createRequiredFormRule('请选择')
 }
 
 function createDefaultFormModel(): FormModel {
   return {
-    parentId: '',
+    parent_id: '',
     name: '',
     path: '',
     component: 'basic',
-    meta: {
-      i18nTitle: 'default',
-      icon: '',
-      order: 1,
-      title: ''
-    },
-    type: '1',
-    sys_flag: '1',
-    describe: ''
+    i18nTitle: 'default',
+    icon: '',
+    orders: 1,
+    title: '',
+    element_type: '1',
+    authority: [],
+    description: ''
   }
 }
 
@@ -171,7 +184,18 @@ function handleUpdateFormModelByModalType() {
 
 async function handleSubmit() {
   await formRef.value?.validate()
-  window.$message?.success('新增成功!')
+  const formData = deepClone(formModel)
+  formData.authority = JSON.stringify(formData.authority)
+  let data: any
+  if (props.type === 'add') {
+    data = await addElement(formData)
+  } else if (props.type === 'edit') {
+    data = await editElement(formData)
+  }
+  if (!data.error) {
+    window.$message?.success(data.message)
+    emit('success')
+  }
   closeModal()
 }
 

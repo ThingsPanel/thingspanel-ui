@@ -57,7 +57,7 @@ export default class CustomAxiosInstance {
           const contentType = handleConfig.headers['Content-Type'] as UnionKey.ContentType
           handleConfig.data = await transformRequestData(handleConfig.data, contentType)
           // 设置token
-          handleConfig.headers.Authorization = localStg.get('token') || ''
+          handleConfig.headers['x-token'] = localStg.get('token') || ''
         }
         return handleConfig
       },
@@ -71,10 +71,10 @@ export default class CustomAxiosInstance {
         const { status, config } = response
         if (status === 200 || status < 300 || status === 304) {
           const backend = response.data
-          const { codeKey, dataKey, successCode } = this.backendConfig
+          const { codeKey, dataKey, successCode, msgKey } = this.backendConfig
           // 请求成功
           if (backend[codeKey] === successCode) {
-            return handleServiceResult(null, backend[dataKey])
+            return handleServiceResult(null, backend[dataKey], backend[msgKey])
           }
 
           // token失效, 刷新token
@@ -82,7 +82,7 @@ export default class CustomAxiosInstance {
             // 原始请求
             const originRequest = new Promise(resolve => {
               this.retryQueues.push((refreshConfig: AxiosRequestConfig) => {
-                config.headers.Authorization = refreshConfig.headers?.Authorization
+                config.headers['x-token'] = refreshConfig.headers ? refreshConfig.headers['x-token'] : ''
                 resolve(this.instance.request(config))
               })
             })

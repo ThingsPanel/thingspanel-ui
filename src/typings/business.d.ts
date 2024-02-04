@@ -20,12 +20,7 @@ declare namespace Auth {
 }
 
 declare namespace UserManagement {
-  interface User extends ApiUserManagement.User {
-    /** 序号 */
-    index: number
-    /** 表格的key（id） */
-    key: string
-  }
+  interface User extends ApiUserManagement.User {}
 
   /**
    * 用户性别
@@ -36,12 +31,10 @@ declare namespace UserManagement {
 
   /**
    * 用户状态
-   * - 1: 启用
-   * - 2: 禁用
-   * - 3: 冻结
-   * - 4: 软删除
+   * - N: 正常
+   * - F: 冻结
    */
-  type UserStatusKey = NonNullable<User['userStatus']>
+  type UserStatusKey = NonNullable<User['status']>
 }
 
 /**
@@ -142,18 +135,17 @@ declare namespace CustomRoute {
 
   /**
    * 清理类型
-   * - 1: 目录
-   * - 2: 菜单
+   * - 1: 菜单
+   * - 2: 目录
    * - 3: 路由
    * - 4: 按钮
    */
-  type routerTypeKey = NonNullable<Route['type']>
+  type routerTypeKey = NonNullable<Route['element_type']>
 
   /**
    * 清理类型
    * - 1: 租户
    * - 2: 系统管理员
-   * - 3: 共有
    */
-  type routerSysFlagKey = NonNullable<Route['sys_flag']>
+  type routerSysFlagKey = string
 }

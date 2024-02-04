@@ -1,5 +1,5 @@
 /** 统一失败和成功的请求结果的数据类型 */
-export async function handleServiceResult<T = any>(error: Service.RequestError | null, data: any) {
+export async function handleServiceResult<T = any>(error: Service.RequestError | null, data: any, msg: string = '') {
   if (error) {
     const fail: Service.FailedResult = {
       error,
@@ -11,7 +11,10 @@ export async function handleServiceResult<T = any>(error: Service.RequestError |
     error: null,
     data
   }
-  return success
+  return {
+    ...success,
+    msg
+  }
 }
 
 /** 请求结果的适配器：用于接收适配器函数和请求结果 */

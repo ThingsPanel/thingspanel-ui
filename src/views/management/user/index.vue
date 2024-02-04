@@ -6,11 +6,11 @@
           <n-form-item label="邮箱" path="email">
             <n-input v-model:value="queryParams.email" />
           </n-form-item>
-          <n-form-item label="姓名" path="userName">
-            <n-input v-model:value="queryParams.userName" />
+          <n-form-item label="姓名" path="name">
+            <n-input v-model:value="queryParams.name" />
           </n-form-item>
-          <n-form-item label="账户状态" path="userStatus">
-            <n-select v-model:value="queryParams.userStatus" clearable class="w-200px" :options="userStatusOptions" />
+          <n-form-item label="账户状态" path="status">
+            <n-select v-model:value="queryParams.status" clearable class="w-200px" :options="userStatusOptions" />
           </n-form-item>
           <n-form-item>
             <n-button class="w-72px" type="primary" @click="handleQuery">搜索</n-button>
@@ -48,7 +48,7 @@
           flex-height
           class="flex-1-hidden"
         />
-        <table-action-modal v-model:visible="visible" :type="modalType" :edit-data="editData" />
+        <table-action-modal v-model:visible="visible" :type="modalType" :edit-data="editData" @success="getTableData" />
         <edit-password-modal v-model:visible="editPwdVisible" :edit-data="editData"></edit-password-modal>
       </div>
     </n-card>
@@ -61,7 +61,7 @@ import type { Ref } from 'vue'
 import { NButton, NPopconfirm, NSpace, NTag } from 'naive-ui'
 import type { DataTableColumns, PaginationProps } from 'naive-ui'
 import { genderLabels, userStatusLabels, userStatusOptions } from '@/constants'
-import { fetchUserList } from '@/service'
+import { fetchUserList, delUser } from '@/service'
 import { useBoolean, useLoading } from '@/hooks'
 import TableActionModal from './components/table-action-modal.vue'
 import EditPasswordModal from './components/edit-password-modal.vue'
@@ -72,12 +72,17 @@ const { loading, startLoading, endLoading } = useLoading(false)
 const { bool: visible, setTrue: openModal } = useBoolean()
 const { bool: editPwdVisible, setTrue: openEditPwdModal } = useBoolean()
 
-type QueryFormModel = Pick<UserManagement.User, 'email' | 'userName' | 'userStatus'>
+type QueryFormModel = Pick<UserManagement.User, 'email' | 'name' | 'status'> & {
+  page: number
+  page_size: number
+}
 
 const queryParams = reactive<QueryFormModel>({
-  email: '',
-  userName: '',
-  userStatus: null
+  email: null,
+  name: null,
+  status: null,
+  page: 1,
+  page_size: 10
 })
 
 const tableData = ref<UserManagement.User[]>([])
@@ -89,46 +94,39 @@ async function getTableData() {
   startLoading()
   const { data } = await fetchUserList(queryParams)
   if (data) {
-    setTimeout(() => {
-      setTableData(data)
-      endLoading()
-    }, 1000)
+    const list: UserManagement.User[] = data.list
+    setTableData(list)
+    endLoading()
   }
 }
 
 const columns: Ref<DataTableColumns<UserManagement.User>> = ref([
-  // {
-  //   type: 'selection',
-  //   align: 'center'
-  // },
   {
     key: 'email',
     title: '邮箱',
     align: 'center'
   },
   {
-    key: 'userName',
+    key: 'name',
     title: '用户名',
     align: 'center'
   },
   {
-    key: 'phone',
+    key: 'phone_number',
     title: '手机号码',
     align: 'center'
   },
   {
-    key: 'userStatus',
+    key: 'status',
     title: '账户状态',
     align: 'center',
     render: row => {
-      if (row.userStatus) {
+      if (row.status) {
         const tagTypes: Record<UserManagement.UserStatusKey, NaiveUI.ThemeColor> = {
-          '1': 'success',
-          '2': 'error',
-          '3': 'warning',
-          '4': 'default'
+          N: 'success',
+          F: 'error'
         }
-        return <NTag type={tagTypes[row.userStatus]}>{userStatusLabels[row.userStatus]}</NTag>
+        return <NTag type={tagTypes[row.status]}>{userStatusLabels[row.status]}</NTag>
       }
       return <span></span>
     }
@@ -143,7 +141,6 @@ const columns: Ref<DataTableColumns<UserManagement.User>> = ref([
           '0': 'success',
           '1': 'warning'
         }
-
         return <NTag type={tagTypes[row.gender]}>{genderLabels[row.gender]}</NTag>
       }
 
@@ -218,8 +215,12 @@ function handleEditTable(rowId: string) {
   openModal()
 }
 
-function handleDeleteTable(rowId: string) {
-  window.$message?.info(`点击了删除，rowId为${rowId}`)
+async function handleDeleteTable(rowId: string) {
+  const data = await delUser(rowId)
+  if (!data.error) {
+    window.$message?.success('删除成功')
+    getTableData()
+  }
 }
 
 const pagination: PaginationProps = reactive({
@@ -229,10 +230,15 @@ const pagination: PaginationProps = reactive({
   pageSizes: [10, 15, 20, 25, 30],
   onChange: (page: number) => {
     pagination.page = page
+    queryParams.page = page
+    getTableData()
   },
   onUpdatePageSize: (pageSize: number) => {
     pagination.pageSize = pageSize
     pagination.page = 1
+    queryParams.page = 1
+    queryParams.page_size = pageSize
+    getTableData()
   }
 })
 
@@ -242,9 +248,10 @@ function handleQuery() {
 
 function handleReset() {
   Object.assign(queryParams, {
-    email: '',
-    userName: '',
-    userStatus: null
+    email: null,
+    name: null,
+    status: null,
+    page: 1
   })
   handleQuery()
 }

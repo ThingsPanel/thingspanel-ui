@@ -25,10 +25,8 @@ export const genderOptions = transformObjectToOption(genderLabels)
 
 /** 用户状态 */
 export const userStatusLabels: Record<UserManagement.UserStatusKey, string> = {
-  1: '启用',
-  2: '禁用',
-  3: '冻结',
-  4: '软删除'
+  F: '冻结',
+  N: '正常'
 }
 export const userStatusOptions = transformObjectToOption(userStatusLabels)
 
@@ -93,8 +91,8 @@ export const routeComponentTypeOptions = transformObjectToOption(routeComponentT
 
 /** 路由管理 - 路由类型 */
 export const routerTypeLabels: Record<CustomRoute.routerTypeKey, string> = {
-  1: '目录',
-  2: '菜单',
+  1: '菜单',
+  2: '目录',
   3: '路由',
   4: '按钮'
 }
@@ -102,8 +100,7 @@ export const routeTypeOptions = transformObjectToOption(routerTypeLabels)
 
 /** 路由管理 - 访问标识 */
 export const routerSysFlagLabels: Record<CustomRoute.routerSysFlagKey, string> = {
-  1: '租户',
-  2: '系统管理员',
-  3: '共有'
+  1: '系统管理员',
+  2: '租户'
 }
 export const routeSysFlagOptions = transformObjectToOption(routerSysFlagLabels)

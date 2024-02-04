@@ -16,26 +16,42 @@
           flex-height
           class="flex-1-hidden"
         />
-        <table-action-modal v-model:visible="visible" :type="modalType" :edit-data="editData" :table-list="tableData" />
+        <table-action-modal
+          v-model:visible="visible"
+          :type="modalType"
+          :edit-data="editData"
+          :table-list="tableData"
+          @success="getTableData"
+        />
       </div>
     </n-card>
   </div>
 </template>
 
 <script setup lang="tsx">
-import { reactive, ref } from 'vue'
+import { reactive, ref, h } from 'vue'
 import type { Ref } from 'vue'
 import { NButton, NPopconfirm, NSpace, NTag } from 'naive-ui'
 import type { DataTableColumns, PaginationProps } from 'naive-ui'
 import { routerSysFlagLabels, routerTypeLabels } from '@/constants'
+import { fetchElementList, delElement } from '@/service'
 import { useBoolean, useLoading } from '@/hooks'
-import { fetchAllRoutes } from '@/service/demo'
 import { $t } from '@/locales'
 import TableActionModal from './components/table-action-modal.vue'
 import type { ModalType } from './components/table-action-modal.vue'
 
 const { loading, startLoading, endLoading } = useLoading(false)
 const { bool: visible, setTrue: openModal } = useBoolean()
+
+type QueryFormModel = {
+  page: number
+  page_size: number
+}
+
+const queryParams = reactive<QueryFormModel>({
+  page: 1,
+  page_size: 10
+})
 
 const tableData = ref<CustomRoute.Route[]>([])
 function setTableData(data: CustomRoute.Route[]) {
@@ -44,29 +60,24 @@ function setTableData(data: CustomRoute.Route[]) {
 
 async function getTableData() {
   startLoading()
-  const { data } = await fetchAllRoutes()
+  const { data } = await fetchElementList(queryParams)
   if (data) {
-    setTimeout(() => {
-      setTableData(data)
-      endLoading()
-    }, 1000)
+    const list: ApiCustomRoute.Route[] = data.list
+    setTableData(list)
+    endLoading()
   }
 }
 
 const columns: Ref<DataTableColumns<CustomRoute.Route>> = ref([
-  // {
-  //   type: 'selection',
-  //   align: 'center'
-  // },
   {
     key: 'meta.i18nTitle',
     title: '标题',
     align: 'left',
     render: row => {
-      if (row.meta.i18nTitle) {
-        return <span>{$t(row.meta.i18nTitle)}</span>
+      if (row.i18nTitle && row.i18nTitle !== 'default') {
+        return <span>{$t(row.i18nTitle)}</span>
       }
-      return <span></span>
+      return <span>{row.title}</span>
     }
   },
   {
@@ -79,8 +90,8 @@ const columns: Ref<DataTableColumns<CustomRoute.Route>> = ref([
     title: '图标',
     align: 'left',
     render: row => {
-      if (row.meta.icon) {
-        return <svg-icon icon={row.meta.icon} />
+      if (row.icon) {
+        return <svg-icon icon={row.icon} />
       }
       return <span></span>
     }
@@ -96,40 +107,46 @@ const columns: Ref<DataTableColumns<CustomRoute.Route>> = ref([
     align: 'left'
   },
   {
-    key: 'type',
+    key: 'element_type',
     title: '类型',
     align: 'left',
     render: row => {
-      if (row.type) {
+      if (row.element_type) {
         const tagTypes: Record<CustomRoute.routerTypeKey, NaiveUI.ThemeColor> = {
           '1': 'success',
           '2': 'error',
           '3': 'warning',
           '4': 'default'
         }
-        return <NTag type={tagTypes[row.type]}>{routerTypeLabels[row.type]}</NTag>
+        return <NTag type={tagTypes[row.element_type]}>{routerTypeLabels[row.element_type]}</NTag>
       }
       return <span></span>
     }
   },
   {
-    key: 'sys_flag',
+    key: 'authority',
     title: '访问标识',
     align: 'left',
     render: row => {
-      if (row.sys_flag) {
-        const tagTypes: Record<CustomRoute.routerSysFlagKey, NaiveUI.ThemeColor> = {
-          '1': 'success',
-          '2': 'error',
-          '3': 'warning'
-        }
-        return <NTag type={tagTypes[row.sys_flag]}>{routerSysFlagLabels[row.sys_flag]}</NTag>
+      if (row.authority && row.authority.length) {
+        const tags = row.authority.map((tagKey: string) => {
+          return h(
+            NTag,
+            {
+              type: 'success'
+            },
+            {
+              default: () => routerSysFlagLabels[tagKey]
+            }
+          )
+        })
+        return tags
       }
       return <span></span>
     }
   },
   {
-    key: 'describe',
+    key: 'description',
     title: '描述',
     align: 'left'
   },
@@ -185,8 +202,12 @@ function handleEditTable(rowId: string) {
   openModal()
 }
 
-function handleDeleteTable(rowId: string) {
-  window.$message?.info(`点击了删除，rowId为${rowId}`)
+async function handleDeleteTable(rowId: string) {
+  const data = await delElement(rowId)
+  if (!data.error) {
+    window.$message?.success('删除成功')
+    getTableData()
+  }
 }
 
 const pagination: PaginationProps = reactive({
@@ -196,10 +217,15 @@ const pagination: PaginationProps = reactive({
   pageSizes: [10, 15, 20, 25, 30],
   onChange: (page: number) => {
     pagination.page = page
+    queryParams.page = page
+    getTableData()
   },
   onUpdatePageSize: (pageSize: number) => {
     pagination.pageSize = pageSize
     pagination.page = 1
+    queryParams.page = 1
+    queryParams.page_size = pageSize
+    getTableData()
   }
 })
 

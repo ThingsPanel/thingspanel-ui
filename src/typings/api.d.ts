@@ -1,4 +1,22 @@
 // 后端接口返回的数据类型
+declare namespace BaseApi {
+  /** 后端返回的路由数据类型 */
+  interface Data {
+    code: number
+    message: string
+  }
+}
+
+/** 后端返回的路由相关类型 */
+declare namespace ApiRoute {
+  /** 后端返回的路由数据类型 */
+  interface Route {
+    /** 动态路由 */
+    routes: AuthRoute.Route[]
+    /** 路由首页对应的key */
+    home: AuthRoute.AllRouteKey
+  }
+}
 
 /** 后端返回的用户权益相关类型 */
 declare namespace ApiAuth {
@@ -29,17 +47,15 @@ declare namespace ApiUserManagement {
     /** 用户邮箱 */
     email: string | null
     /** 用户名 */
-    userName: string | null
+    name: string | null
     /** 用户手机号码 */
-    phone: string
+    phone_number: string
     /**
      * 用户状态
-     * - 1: 启用
-     * - 2: 禁用
-     * - 3: 冻结
-     * - 4: 软删除
+     * - N: 正常
+     * - F: 冻结
      */
-    userStatus: '1' | '2' | '3' | '4' | null
+    status: 'F' | 'N' | null
     /**
      * 用户性别
      * - 0: 女
@@ -51,6 +67,11 @@ declare namespace ApiUserManagement {
     remark: string | null
     /** 创建时间 */
     createTime: string | null
+  }
+
+  interface Data {
+    list: User[]
+    total: number
   }
 }
 
@@ -166,28 +187,33 @@ declare namespace ApiCustomRoute {
     /** id */
     id: string
     /** 父节点ID */
-    parentId: string
-    /** 名称 */
+    parent_id: string
+    /** 标题 */
+    title: string
+    /** 国际化 */
+    i18nTitle: I18nType.I18nKey
+    /** 图标 */
+    icon: string
+    /** 组件名称 */
     name: string
-    /** 名称 */
+    /** 组件路径 */
     path: string
     /** 组件类型 */
     component: AuthRoute.RouteComponentType
-    /** 节点描述 */
-    meta: {
-      i18nTitle: I18nType.I18nKey
-      /** 图标 */
-      icon: string
-      /** 排序 */
-      order: number
-      /** 标题 */
-      title: string
-    }
+    /** 排序 */
+    orders: number
     /** 类型 */
-    type: '1' | '2' | '3' | '4'
+    element_type: '1' | '2' | '3' | '4'
     /** 访问标识 */
-    sys_flag: '1' | '2' | '3'
+    authority: any
     /** 描述 */
-    describe: string
+    description: string
+    /** 子节点 */
+    children: []
+  }
+
+  interface Data {
+    list: Route[]
+    total: number
   }
 }
