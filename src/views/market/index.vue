@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-hidden">
+  <div>
     <n-card title="" :bordered="false" class="h-full rounded-8px shadow-sm">
       <n-tabs type="line" animated>
         <n-tab-pane name="installed" tab="已安装">
