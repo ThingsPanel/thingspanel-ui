@@ -1,10 +1,10 @@
 export function adapterOfFetchUserList(data: ApiUserManagement.User[] | null): UserManagement.User[] {
   if (!data) return []
 
-  return data.map((item, index) => {
+  return data.map(item => {
     const user: UserManagement.User = {
-      index: index + 1,
-      key: item.id,
+      // index: index + 1,
+      // key: item.id,
       ...item
     }
 

@@ -2,7 +2,7 @@
   <div>
     <div>
       <span class="inline-block w-[80px]">插件类型：</span>
-      <n-radio-group v-model:value="state.pluginName" name="radiobuttongroup2" size="medium">
+      <n-radio-group v-model:value="state.pluginType" name="radiobuttongroup2" size="medium">
         <n-radio-button v-for="pitem in pluginTyps" :key="pitem.value" :value="pitem.value">
           {{ pitem.name }}
         </n-radio-button>
@@ -17,7 +17,13 @@
     </div>
 
     <div v-if="state.displayMode === 'grid'" v-loading="state.listLoading">
-      <plugin-card v-for="item in listArr" :key="item.id" :data="item" :is-installed="true"></plugin-card>
+      <plugin-card
+        v-for="item in listArr"
+        :key="item.id"
+        :show-type="props.showType"
+        :data="item"
+        :is-installed="true"
+      ></plugin-card>
     </div>
     <div v-else>
       <n-table :single-line="false">
@@ -36,10 +42,14 @@
             <td>插件作作者</td>
             <td>插件描述</td>
             <td>插件分类</td>
-            <td>
+            <td v-if="props.showType === 'installed'">
               <n-button class="mr-2" type="info" @click="loadList">编辑</n-button>
               <n-button class="mr-2" type="info" @click="loadList">导出</n-button>
               <n-button class="" type="info" @click="loadList">卸载</n-button>
+            </td>
+            <td v-else-if="props.showType === 'market'">
+              <n-button class="mr-2" type="info" @click="loadList">详情</n-button>
+              <n-button class="mr-2" type="info" @click="loadList">一键安装</n-button>
             </td>
           </tr>
         </tbody>
@@ -61,8 +71,17 @@ const pluginTyps = ref([
 ])
 const listArr: any = ref([{}, {}, {}, {}, {}, {}])
 
+interface Props {
+  /** 是否勾选 */
+  showType?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  showType: 'installed'
+})
+
 const state = reactive({
-  pluginName: '',
+  pluginType: 1,
   keyword: '',
   displayMode: 'grid',
   listLoading: false,

@@ -8,10 +8,14 @@
         <p class="py-2">版本号：传感器</p>
         <p class="py-2">作者：传感器</p>
         <p class="py-2">评分：传感器</p>
-        <p class="text-center py-4">
+        <p v-if="props.showType === 'installed'" class="text-center py-4">
           <n-button class="mr-2" type="info" @click="loadList">编辑</n-button>
           <n-button class="mr-2" type="info" @click="loadList">导出</n-button>
           <n-button class="" type="info" @click="loadList">卸载</n-button>
+        </p>
+        <p v-else-if="props.showType === 'market'" class="text-center py-4">
+          <n-button class="mr-2" type="info" @click="loadList">详情</n-button>
+          <n-button class="mr-2" type="info" @click="loadList">一键安装</n-button>
         </p>
       </div>
     </div>
@@ -19,6 +23,15 @@
 </template>
 
 <script setup lang="ts">
+interface Props {
+  /** 是否勾选 */
+  showType?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  showType: 'installed'
+})
+
 function loadList() {
   console.log(1)
 }
